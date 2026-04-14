@@ -205,7 +205,7 @@ function App() {
               {loginStep === 'id' ? (
                 <MotionDiv key="id-step" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} className="space-y-3">
                   <input value={enteredNationalId} onChange={(e) => setEnteredNationalId(e.target.value)} className="w-full rounded-2xl border border-slate-200/80 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#1b6754]/40 focus:shadow-[0_0_0_4px_rgba(27,103,84,0.12)]" placeholder="Enter your National ID" />
-                  <p className="text-xs text-slate-500">Credentials are pre-filled for fast testing.</p>
+                  <p className="text-xs text-slate-500"></p>
                   <MotionButton whileHover={{ y: -1 }} whileTap={{ y: 0 }} onClick={handleLoginId} className="w-full rounded-2xl bg-[#1b6754] px-4 py-3 text-sm font-semibold text-white transition">
                     Send Code
                   </MotionButton>
@@ -213,7 +213,7 @@ function App() {
               ) : (
                 <MotionDiv key="otp-step" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} className="space-y-3">
                   <input value={otp} onChange={(e) => setOtp(e.target.value)} maxLength={6} className="w-full rounded-2xl border border-slate-200/80 bg-white px-4 py-3 text-center text-sm tracking-[0.35em] text-slate-700 outline-none transition focus:border-[#1b6754]/40 focus:shadow-[0_0_0_4px_rgba(27,103,84,0.12)]" placeholder="------" />
-                  <p className="text-xs text-slate-500">Verification code is ready for quick testing.</p>
+                  <p className="text-xs text-slate-500">Verification code sent to your phone number.</p>
                   <MotionButton whileHover={{ y: -1 }} whileTap={{ y: 0 }} onClick={handleOtp} className="w-full rounded-2xl bg-[#1b6754] px-4 py-3 text-sm font-semibold text-white transition">
                     Verify & Continue
                   </MotionButton>

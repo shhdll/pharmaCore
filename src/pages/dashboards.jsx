@@ -1,26 +1,43 @@
 import { motion } from 'framer-motion'
-import {
+import { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
+import { 
+  Heart, 
+  User, 
+  MapPin, 
+  Phone, 
+  AlertCircle, 
+  CheckCircle2, 
+  History, 
+  TrendingUp, 
+  Pill, 
+  Clock,
   AlertTriangle,
   Archive,
   ClipboardCheck,
   Package,
   Syringe,
+  Activity,
+  PillBottle,
+  HeartPulse,
+  LayoutGrid,
+  UserRoundSearch,
+  ClipboardList,
+  ShieldCheck
 } from 'lucide-react'
-
-import {
-  ActivityFeed,
-  Badge,
-  Card,
-  ChartPlaceholder,
-  SkeletonCard,
-  StatCard,
-  Table,
-  Timeline
+import { 
+  Card, 
+  Table, 
+  Badge, 
+  StatCard, 
+  Modal, 
+  ActivityFeed, 
+  ChartPlaceholder, 
+  SkeletonCard, 
+  Timeline 
 } from '../components/ui'
 import cabinetIcon from '../assets/medicine-cabinet.png'
-import { useEffect, useState } from 'react'
 import warningIcon from '../assets/warning.png'
-import { useLocation } from 'react-router-dom'
 
 /* ---------------- STATUS MAP ---------------- */
 
@@ -30,17 +47,10 @@ const statusTone = {
   out_of_stock: 'danger',
   expiring_soon: 'warning',
   expired: 'danger',
-
   active: 'info',
   not_dispensed: 'warning',
   dispensed: 'success',
   expired_rx: 'danger'
-}
-const statusLabel = {
-  active: 'Active',
-  dispensed: 'Dispensed',
-  not_dispensed: 'Not Dispensed',
-  expired: 'Expired'
 }
 
 /* ---------------- ADMIN DASHBOARD ---------------- */
@@ -185,7 +195,6 @@ export function PharmacistDashboard({
   const [riskRx, setRiskRx] = useState(null)
   const location = useLocation()
 
-  // Detect mode from current URL
   const mode =
     location.pathname.includes('overview') ? 'overview' :
     location.pathname.includes('queue') ? 'queue' :
@@ -229,30 +238,15 @@ export function PharmacistDashboard({
 
   return (
     <div className="space-y-4">
-      
-      {/* --- PHARMACIST OVERVIEW STATS (Visible on /pharmacist/overview) --- */}
       {mode === 'overview' && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-in fade-in duration-500">
-          <StatCard 
-            title="Pending Reviews" 
-            value={String(prescriptionsData.filter(p => p.status === 'Not Dispensed').length)} 
-            icon={AlertTriangle} 
-          />
-          <StatCard 
-            title="Total Patients" 
-            value={String(patientsData.length)} 
-            icon={Package} 
-          />
-          <StatCard 
-            title="High-Alert Meds" 
-            value={String(medicationsData.filter(m => m.critical).length)} 
-            icon={Syringe} 
-          />
+          <StatCard title="Pending Reviews" value={String(prescriptionsData.filter(p => p.status === 'Not Dispensed').length)} icon={AlertTriangle} />
+          <StatCard title="Total Patients" value={String(patientsData.length)} icon={Package} />
+          <StatCard title="High-Alert Meds" value={String(medicationsData.filter(m => m.critical).length)} icon={Syringe} />
         </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* LEFT: QUEUE */}
         <div className="col-span-12 lg:col-span-3 space-y-4">
           <Card>
             <h2 className="font-semibold mb-2">Patient Queue</h2>
@@ -282,16 +276,13 @@ export function PharmacistDashboard({
           </Card>
         </div>
 
-        {/* CENTER */}
         <div className="col-span-12 lg:col-span-6 space-y-4">
           <Card>
             <h2 className="font-semibold mb-2">Prescriptions — {selectedPatient?.name}</h2>
             <Table
               columns={['RX', 'Medicine', 'Status', 'Action']}
               rows={patientRx.map(r => {
-                const risky = isRisky(r)
                 const statusKey = r.status?.toLowerCase().replace(' ', '_')
-
                 return {
                   id: r.id,
                   cells: [
@@ -306,7 +297,7 @@ export function PharmacistDashboard({
                     <Badge key={r.id} tone={statusTone[statusKey] || 'info'}>
                       {r.status}
                     </Badge>,
-                    risky ? (
+                    isRisky(r) ? (
                       <button
                         key={`cab-${r.id}`}
                         onClick={() => openCabinet(r)}
@@ -360,7 +351,6 @@ export function PharmacistDashboard({
           </Card>
         </div>
 
-        {/* CABINET MODAL */}
         {cabinetOpen && (
           <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
             <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl w-[420px] space-y-4 shadow-xl">
@@ -376,7 +366,7 @@ export function PharmacistDashboard({
                   <div className="flex items-center gap-2 mt-2 p-2 bg-orange-50 border border-orange-200 rounded-lg">
                     <img src={warningIcon} className="w-4 h-4" alt="warning" />
                     <p className="text-orange-600 font-medium text-xs">
-                      You are dispensing High-risk medication for {selectedPatient?.name}!
+                      High-risk medication alert for {selectedPatient?.name}!
                     </p>
                   </div>
                 </div>
@@ -384,7 +374,7 @@ export function PharmacistDashboard({
               <div className="flex gap-2 pt-2">
                 <button onClick={() => setCabinetOpen(false)} className="w-1/2 border rounded-xl py-2">Close</button>
                 <button
-                  onClick={() => { console.log('OPEN CABINET:', riskRx); setCabinetOpen(false); }}
+                  onClick={() => setCabinetOpen(false)}
                   className="w-1/2 bg-orange-500 text-white rounded-xl py-2 font-semibold"
                 >
                   Open
@@ -400,74 +390,237 @@ export function PharmacistDashboard({
 
 /* ---------------- PATIENT DASHBOARD ---------------- */
 
+/* ---------------- PATIENT DASHBOARD ---------------- */
+
 export function PatientDashboard({
   patientData,
   prescriptionsData = [],
   doseTakenSet = {},
   contactInfo,
   onMarkDose,
-  onSaveContact
+  onSaveContact,
+  onReportSideEffect
 }) {
-  const myRx = prescriptionsData.filter(p => p.patientId === patientData.id)
+  const [isEditModalOpen, setEditModalOpen] = useState(false);
+  const [editData, setEditData] = useState({ ...contactInfo });
+  const [reportingMed, setReportingMed] = useState(null);
+
+  const myRx = prescriptionsData.filter(p => p.patientId === patientData.id);
+  const activeRx = myRx.filter(r => r.status !== 'expired');
+  const expiredRx = myRx.filter(r => r.status === 'expired');
+
+  const handleSaveContact = () => {
+    onSaveContact(editData);
+    setEditModalOpen(false);
+  };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-      <div className="col-span-12 lg:col-span-8 space-y-4">
-        <Card>
-          <h2 className="font-semibold mb-2">My Medications</h2>
-          <div className="overflow-x-auto">
-            <Table
-              columns={['RX', 'Medicine', 'Status']}
-              rows={myRx.map(r => ({
-                id: r.id,
-                cells: [
-                  r.id,
-                  r.medicine,
-                  <Badge key={r.id} tone={statusTone[r.status] || 'info'}>
-                    {r.status}
-                  </Badge>
-                ]
-              }))}
-            />
-          </div>
-        </Card>
+    <div className="space-y-6 animate-in fade-in duration-700">
+      
+      {/* 1. WELCOMING & ENCOURAGING HEADER */}
+      <header className="py-4">
+        <h1 className="text-3xl font-bold text-slate-800 dark:text-white">
+          Welcome back, {patientData.name}! 👋
+        </h1>
+        <p className="text-emerald-600 font-medium mt-1">
+          "Your health is a journey, not a destination. You are doing an amazing job taking care of yourself today!"
+        </p>
+      </header>
 
-        <Card>
-          <h2 className="font-semibold mb-2">Dose Tracker</h2>
-          {myRx.map(r => (
-            <div key={r.id} className="flex justify-between py-2 border-b last:border-0 border-slate-100 dark:border-slate-800">
-              <span>{r.medicine}</span>
-              <button
-                onClick={() => onMarkDose(r.id)}
-                className="rounded-lg border px-3 py-1 text-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-              >
-                {doseTakenSet[r.id] ? 'Taken' : 'Mark Taken'}
+      {/* 2. STATS OVERVIEW (Risk removed, Age added) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <StatCard title="Consistency Streak" value="5 Days" icon={TrendingUp} />
+        <StatCard title="Active Medications" value={String(activeRx.length)} icon={Pill} />
+        <StatCard title="Patient Age" value={`${patientData.age} Years`} icon={User} />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        {/* LEFT: PILL TRACKER & HISTORY */}
+        <div className="col-span-12 lg:col-span-8 space-y-6">
+          
+          {/* 7. INTERESTING & ENCOURAGING PILL TRACKER */}
+          <Card className="border-t-4 border-t-emerald-500 shadow-sm relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
+              <CheckCircle2 size={120} />
+            </div>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-bold flex items-center gap-2">
+                  <Clock className="text-emerald-500" /> Daily Routine
+                </h2>
+                <p className="text-sm text-slate-500 italic">Stay consistent, stay healthy!</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs font-bold text-emerald-600 uppercase">Daily Goal</p>
+                <p className="text-lg font-black text-slate-700 dark:text-white">
+                   {Object.keys(doseTakenSet).length} / {activeRx.length}
+                </p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 gap-4">
+              {activeRx.map((r) => (
+                <div key={r.id} className={`flex flex-col p-5 rounded-2xl border transition-all duration-300 ${
+                  doseTakenSet[r.id] 
+                  ? 'bg-emerald-50/50 border-emerald-200' 
+                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-emerald-300'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex gap-4 items-center">
+                      <div className={`p-3 rounded-xl transition-colors ${doseTakenSet[r.id] ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-400'}`}>
+                        <Pill size={24} />
+                      </div>
+                      <div>
+                        <p className="font-bold text-lg text-slate-800 dark:text-slate-100">{r.medicine}</p>
+                        <p className="text-xs text-slate-500 font-medium">{r.instructions}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                      {/* 3. REPORT SIDE EFFECT PER MEDICATION */}
+                      <button
+                        onClick={() => setReportingMed(r.medicine)}
+                        className="text-xs font-semibold text-rose-500 hover:text-rose-600 transition-colors"
+                      >
+                        Report Issue
+                      </button>
+                      <button
+                        onClick={() => onMarkDose(r.id)}
+                        className={`px-8 py-2.5 rounded-xl text-sm font-black transition-all ${
+                          doseTakenSet[r.id] 
+                          ? 'bg-emerald-500 text-white cursor-default shadow-md' 
+                          : 'bg-white border-2 border-emerald-600 text-emerald-600 hover:bg-emerald-50 active:scale-95'
+                        }`}
+                      >
+                        {doseTakenSet[r.id] ? '✓ DONE' : 'TAKE DOSE'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          {/* 4. OLD PRESCRIPTION HISTORY */}
+          <Card>
+            <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-slate-700">
+              <History className="text-blue-500" /> Full Medical History
+            </h2>
+            <div className="overflow-x-auto">
+              <Table
+                columns={['RX ID', 'Medication', 'Status', 'Started Date']}
+                rows={[...activeRx, ...expiredRx].map(r => ({
+                  id: r.id,
+                  cells: [
+                    <span className="text-xs font-mono text-slate-400">{r.id}</span>,
+                    <p className="font-semibold">{r.medicine}</p>,
+                    <Badge tone={r.status === 'expired' ? 'danger' : 'success'}>{r.status}</Badge>,
+                    <span className="text-xs text-slate-500">{r.createdAt.split(' ')[0]}</span>
+                  ]
+                }))}
+              />
+            </div>
+          </Card>
+        </div>
+
+        {/* 5. LIGHT PROFILE COLUMN */}
+        <div className="col-span-12 lg:col-span-4 space-y-6">
+          
+          <Card className="bg-white border-slate-200 shadow-sm border-t-4 border-t-emerald-500">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-bold text-slate-800">My Profile</h2>
+              {/* 2. EDIT BUTTON FOR POPUP */}
+              <button onClick={() => setEditModalOpen(true)} className="text-emerald-600 text-xs font-bold hover:underline bg-emerald-50 px-2 py-1 rounded-lg">
+                Edit Details
               </button>
             </div>
-          ))}
-        </Card>
+            
+            <div className="flex flex-col items-center text-center mb-6">
+              <div className="h-20 w-20 rounded-3xl bg-emerald-100 border-4 border-white shadow-md flex items-center justify-center text-emerald-600 text-3xl font-black mb-3">
+                {patientData.name.charAt(0)}
+              </div>
+              <h3 className="text-xl font-bold text-slate-800">{patientData.name}</h3>
+              <p className="text-xs text-slate-400 font-mono tracking-widest mt-1">NID: {patientData.nationalId}</p>
+            </div>
+
+            <div className="space-y-4 pt-4 border-t border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-slate-50 rounded-lg"><User size={16} className="text-slate-400" /></div>
+                <div><p className="text-[10px] text-slate-400 uppercase font-bold">Age</p><p className="text-sm font-semibold">{patientData.age} Years</p></div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-slate-50 rounded-lg"><Phone size={16} className="text-slate-400" /></div>
+                <div><p className="text-[10px] text-slate-400 uppercase font-bold">Primary Phone</p><p className="text-sm font-semibold">{contactInfo.mobile}</p></div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-slate-50 rounded-lg"><MapPin size={16} className="text-slate-400" /></div>
+                <div><p className="text-[10px] text-slate-400 uppercase font-bold">Address</p><p className="text-sm font-semibold line-clamp-1">{contactInfo.address}</p></div>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="bg-blue-50 border-blue-100 text-blue-700">
+             <p className="text-xs font-bold flex items-center gap-2"><TrendingUp size={14}/> Health Tip</p>
+             <p className="text-[11px] mt-1 italic leading-relaxed">"Consistency is key! Taking your meds at the same time each day helps your body maintain a steady level of treatment."</p>
+          </Card>
+        </div>
       </div>
 
-      <div className="col-span-12 lg:col-span-4 space-y-4">
-        <Card>
-          <h2 className="font-semibold mb-2">Profile</h2>
-          <div className="text-sm space-y-1">
-            <p className="font-medium">{patientData.name}</p>
-            <p className="text-slate-500">Blood Type: {patientData.bloodType}</p>
-            <p className="text-slate-500">Risk Profile: {patientData.risk}</p>
+      {/* --- POPUPS / MODALS --- */}
+
+      {/* 2. EDIT CONTACT POPUP */}
+      <Modal open={isEditModalOpen} onClose={() => setEditModalOpen(false)} title="Update Personal Information">
+        <div className="space-y-4 p-2">
+          <div>
+            <label className="text-xs font-bold text-slate-500 block mb-1">Mobile Number</label>
+            <input 
+              value={editData.mobile} 
+              onChange={(e) => setEditData({ ...editData, mobile: e.target.value })}
+              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500 outline-none"
+            />
           </div>
-        </Card>
+          <div>
+            <label className="text-xs font-bold text-slate-500 block mb-1">Residential Address</label>
+            <textarea 
+              value={editData.address} 
+              onChange={(e) => setEditData({ ...editData, address: e.target.value })}
+              className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold h-24 focus:ring-2 focus:ring-emerald-500 outline-none"
+            />
+          </div>
+          <button 
+            onClick={handleSaveContact}
+            className="w-full py-4 bg-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-emerald-100 active:scale-95 transition-transform"
+          >
+            Confirm & Save Changes
+          </button>
+        </div>
+      </Modal>
 
-        <Card>
-          <h2 className="font-semibold mb-2">Contact Info</h2>
-          <label className="text-xs text-slate-500 block mb-1">Mobile Number</label>
-          <input
-            value={contactInfo.mobile}
-            onChange={(e) => onSaveContact({ ...contactInfo, mobile: e.target.value })}
-            className="w-full border rounded-lg p-2 text-sm bg-transparent border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none"
+      {/* 3. SIDE EFFECT POPUP (Medication Specific) */}
+      <Modal open={!!reportingMed} onClose={() => setReportingMed(null)} title={`Report Issue with ${reportingMed}`}>
+        <div className="space-y-4 p-2 text-center">
+          <div className="p-5 bg-rose-50 rounded-2xl flex flex-col items-center gap-2 border border-rose-100">
+             <AlertCircle className="text-rose-500" size={32} />
+             <p className="text-xs text-rose-700 font-bold">How are you feeling after taking {reportingMed}?</p>
+             <p className="text-[10px] text-rose-600 italic">Your report will be sent to your pharmacist for review.</p>
+          </div>
+          <textarea 
+            placeholder="Please describe any side effects (e.g., headache, dizziness, nausea)..."
+            className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm h-32 focus:ring-2 focus:ring-rose-500 outline-none"
           />
-        </Card>
-      </div>
+          <button 
+            onClick={() => {
+              onReportSideEffect(reportingMed, 'User reported side effect via tracker');
+              setReportingMed(null);
+            }}
+            className="w-full py-4 bg-rose-600 text-white rounded-xl font-bold shadow-lg shadow-rose-100 active:scale-95 transition-transform"
+          >
+            Submit Report
+          </button>
+        </div>
+      </Modal>
+
     </div>
-  )
+  );
 }
