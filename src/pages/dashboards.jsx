@@ -17,6 +17,10 @@ import {
   Table,
   Timeline
 } from '../components/ui'
+import cabinetIcon from '../assets/medicine-cabinet.png'
+import { useEffect, useState } from 'react'
+import warningIcon from '../assets/warning.png'
+import { useLocation } from 'react-router-dom'
 
 /* ---------------- STATUS MAP ---------------- */
 
@@ -31,6 +35,12 @@ const statusTone = {
   not_dispensed: 'warning',
   dispensed: 'success',
   expired_rx: 'danger'
+}
+const statusLabel = {
+  active: 'Active',
+  dispensed: 'Dispensed',
+  not_dispensed: 'Not Dispensed',
+  expired: 'Expired'
 }
 
 /* ---------------- ADMIN DASHBOARD ---------------- */
@@ -93,7 +103,6 @@ export function AdminDashboard({
       className="grid grid-cols-1 lg:grid-cols-12 gap-4"
     >
       <div className="col-span-12 lg:col-span-9 space-y-4">
-
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <StatCard title="Total Medications" value={String(medicationsData.length)} icon={Package} />
           <StatCard title="Low Stock" value={String(lowStock)} icon={AlertTriangle} />
@@ -104,7 +113,6 @@ export function AdminDashboard({
 
         <Card className="space-y-4">
           <h2 className="text-lg font-semibold">Inventory</h2>
-
           <div className="overflow-x-auto">
             {loading ? (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -119,17 +127,10 @@ export function AdminDashboard({
               />
             )}
           </div>
-
           <div className="grid grid-cols-3 gap-2">
-            <button onClick={onAddItem} className="rounded-xl bg-green-600 px-3 py-2 text-white text-sm">
-              Add
-            </button>
-            <button onClick={onUpdateItem} className="rounded-xl border px-3 py-2 text-sm">
-              Update
-            </button>
-            <button onClick={onRemoveItem} className="rounded-xl border border-red-400 px-3 py-2 text-sm text-red-600">
-              Remove
-            </button>
+            <button onClick={onAddItem} className="rounded-xl bg-green-600 px-3 py-2 text-white text-sm">Add</button>
+            <button onClick={onUpdateItem} className="rounded-xl border px-3 py-2 text-sm">Update</button>
+            <button onClick={onRemoveItem} className="rounded-xl border border-red-400 px-3 py-2 text-sm text-red-600">Remove</button>
           </div>
         </Card>
 
@@ -142,7 +143,6 @@ export function AdminDashboard({
       </div>
 
       <div className="col-span-12 lg:col-span-3 space-y-4">
-
         <Card>
           <h2 className="mb-3 text-lg font-semibold">System Alerts</h2>
           <ActivityFeed
@@ -153,7 +153,6 @@ export function AdminDashboard({
             ]}
           />
         </Card>
-
         <Card>
           <h2 className="mb-3 text-lg font-semibold">Compliance</h2>
           <Timeline
@@ -164,7 +163,6 @@ export function AdminDashboard({
             ]}
           />
         </Card>
-
       </div>
     </motion.div>
   )
@@ -176,12 +174,31 @@ export function PharmacistDashboard({
   patientsData = [],
   prescriptionsData = [],
   reportedSideEffects = [],
+  medicationsData = [],
   selectedNationalId,
   setSelectedNationalId,
   selectedRxId,
   setSelectedRxId,
   onDispense
 }) {
+  const [cabinetOpen, setCabinetOpen] = useState(false)
+  const [riskRx, setRiskRx] = useState(null)
+  const location = useLocation()
+
+  // Detect mode from current URL
+  const mode =
+    location.pathname.includes('overview') ? 'overview' :
+    location.pathname.includes('queue') ? 'queue' :
+    location.pathname.includes('review') ? 'review' :
+    location.pathname.includes('dispense') ? 'dispense' :
+    'overview'
+
+  const criticalSet = new Set(
+    medicationsData
+      .filter(m => m.critical)
+      .map(m => m.name)
+  )
+
   const selectedPatient =
     patientsData.find(p => p.nationalId === selectedNationalId) ||
     patientsData[0]
@@ -189,21 +206,56 @@ export function PharmacistDashboard({
   const patientRx =
     prescriptionsData.filter(p => p.patientId === selectedPatient?.id)
 
-  // FIX: correct relational model (patient-based, not medicine matching)
+  const selectedPrescription =
+    patientRx.find(r => r.id === selectedRxId)
+
   const patientSideEffects =
-    reportedSideEffects.filter(se =>
-      se.patientId === selectedPatient?.id
-    )
+    reportedSideEffects.filter(se => se.patientId === selectedPatient?.id)
+
+  useEffect(() => {
+    if (selectedPatient && patientRx.length > 0) {
+      setSelectedRxId(patientRx[0].id)
+    }
+  }, [selectedPatient?.id, setSelectedRxId])
+
+  const isRisky = (rx) =>
+    rx?.status?.toLowerCase().replace(' ', '_') === 'not_dispensed' &&
+    criticalSet.has(rx.medicine)
+
+  const openCabinet = (rx) => {
+    setRiskRx(rx)
+    setCabinetOpen(true)
+  }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+    <div className="space-y-4">
+      
+      {/* --- PHARMACIST OVERVIEW STATS (Visible on /pharmacist/overview) --- */}
+      {mode === 'overview' && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-in fade-in duration-500">
+          <StatCard 
+            title="Pending Reviews" 
+            value={String(prescriptionsData.filter(p => p.status === 'Not Dispensed').length)} 
+            icon={AlertTriangle} 
+          />
+          <StatCard 
+            title="Total Patients" 
+            value={String(patientsData.length)} 
+            icon={Package} 
+          />
+          <StatCard 
+            title="High-Alert Meds" 
+            value={String(medicationsData.filter(m => m.critical).length)} 
+            icon={Syringe} 
+          />
+        </div>
+      )}
 
-      {/* LEFT: PATIENT QUEUE */}
-      <div className="col-span-12 lg:col-span-3 space-y-4">
-        <Card>
-          <h2 className="font-semibold mb-2">Patient Queue</h2>
-
-          <div className="overflow-x-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        {/* LEFT: QUEUE */}
+        <div className="col-span-12 lg:col-span-3 space-y-4">
+          <Card>
+            <h2 className="font-semibold mb-2">Patient Queue</h2>
             <Table
               columns={['ID', 'Name']}
               rows={patientsData.slice(0, 12).map(p => ({
@@ -212,7 +264,10 @@ export function PharmacistDashboard({
                   p.id,
                   <button
                     key={p.id}
-                    onClick={() => setSelectedNationalId(p.nationalId)}
+                    onClick={() => {
+                      setSelectedNationalId(p.nationalId)
+                      setSelectedRxId(null)
+                    }}
                     className={`w-full text-left px-2 py-1 rounded-lg transition ${
                       selectedNationalId === p.nationalId
                         ? 'bg-emerald-500 text-white font-semibold'
@@ -224,92 +279,121 @@ export function PharmacistDashboard({
                 ]
               }))}
             />
-          </div>
-        </Card>
-      </div>
+          </Card>
+        </div>
 
-      {/* CENTER: PRESCRIPTIONS */}
-      <div className="col-span-12 lg:col-span-6 space-y-4">
-
-        <Card>
-          <h2 className="font-semibold mb-2">
-            Prescriptions — {selectedPatient?.name}
-          </h2>
-
-          <div className="overflow-x-auto">
+        {/* CENTER */}
+        <div className="col-span-12 lg:col-span-6 space-y-4">
+          <Card>
+            <h2 className="font-semibold mb-2">Prescriptions — {selectedPatient?.name}</h2>
             <Table
-              columns={['RX', 'Medicine', 'Status']}
-              rows={patientRx.map(r => ({
-                id: r.id,
-                cells: [
-                  <button
-                    key={r.id}
-                    onClick={() => setSelectedRxId(r.id)}
-                    className={`text-left w-full ${
-                      selectedRxId === r.id
-                        ? 'font-semibold text-emerald-600'
-                        : ''
-                    }`}
-                  >
-                    {r.id}
-                  </button>,
-                  r.medicine,
-                  <Badge key={r.id} tone={statusTone[r.status] || 'info'}>
-                    {r.status}
-                  </Badge>
-                ]
-              }))}
+              columns={['RX', 'Medicine', 'Status', 'Action']}
+              rows={patientRx.map(r => {
+                const risky = isRisky(r)
+                const statusKey = r.status?.toLowerCase().replace(' ', '_')
+
+                return {
+                  id: r.id,
+                  cells: [
+                    <button
+                      key={r.id}
+                      onClick={() => setSelectedRxId(r.id)}
+                      className={`text-left w-full ${selectedRxId === r.id ? 'font-semibold text-emerald-600' : ''}`}
+                    >
+                      {r.id}
+                    </button>,
+                    r.medicine,
+                    <Badge key={r.id} tone={statusTone[statusKey] || 'info'}>
+                      {r.status}
+                    </Badge>,
+                    risky ? (
+                      <button
+                        key={`cab-${r.id}`}
+                        onClick={() => openCabinet(r)}
+                        className="flex items-center gap-2 px-2 py-1 text-xs rounded-lg border border-red-500 text-red-600"
+                      >
+                        <img src={cabinetIcon} className="w-4 h-4" alt="cabinet" />
+                        Open Cabinet
+                      </button>
+                    ) : (
+                      <span className="text-xs text-gray-400">—</span>
+                    )
+                  ]
+                }
+              })}
             />
-          </div>
+            <button
+              onClick={() => onDispense(selectedRxId)}
+              className="mt-3 w-full bg-green-600 text-white rounded-xl py-2 hover:bg-green-700 transition"
+            >
+              Dispense
+            </button>
+          </Card>
 
-          <button
-            onClick={() => onDispense(selectedRxId)}
-            className="mt-3 w-full bg-green-600 text-white rounded-xl py-2"
-          >
-            Dispense
-          </button>
-        </Card>
-
-        <Card>
-          <h2 className="font-semibold mb-2">Active Prescription Detail</h2>
-
-          {patientRx.find(r => r.id === selectedRxId) ? (() => {
-            const rx = patientRx.find(r => r.id === selectedRxId)
-
-            return (
+          <Card>
+            <h2 className="font-semibold mb-2">Active Prescription Detail</h2>
+            {selectedPrescription ? (
               <div className="text-sm space-y-1">
-                <p><b>Medicine:</b> {rx.medicine}</p>
-                <p><b>Instructions:</b> {rx.instructions}</p>
-                <p><b>Physician:</b> {rx.physician}</p>
-                <p><b>Refills:</b> {rx.refills}</p>
+                <p><b>Medicine:</b> {selectedPrescription.medicine}</p>
+                <p><b>Instructions:</b> {selectedPrescription.instructions}</p>
+                <p><b>Physician:</b> {selectedPrescription.physician}</p>
+                <p><b>Refills:</b> {selectedPrescription.refills}</p>
               </div>
-            )
-          })() : (
-            <p className="text-sm text-gray-500">
-              Select a prescription
-            </p>
-          )}
-        </Card>
+            ) : (
+              <p className="text-sm text-gray-500 italic">Select a prescription</p>
+            )}
+          </Card>
 
+          <Card>
+            <h2 className="font-semibold mb-2">Side Effects</h2>
+            {patientSideEffects.length > 0 ? (
+              <ActivityFeed
+                items={patientSideEffects.map(se => ({
+                  id: se.id,
+                  title: `${se.medication}: ${se.reaction}`,
+                  time: se.reportedAt
+                }))}
+              />
+            ) : (
+              <p className="text-xs text-gray-500">No side effects logged.</p>
+            )}
+          </Card>
+        </div>
+
+        {/* CABINET MODAL */}
+        {cabinetOpen && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl w-[420px] space-y-4 shadow-xl">
+              <div className="flex items-center gap-2">
+                <img src={cabinetIcon} className="w-6 h-6" alt="cabinet" />
+                <h2 className="font-semibold">Drug Cabinet</h2>
+              </div>
+              {riskRx && (
+                <div className="text-sm space-y-1">
+                  <p><b>RX:</b> {riskRx.id}</p>
+                  <p><b>Medicine:</b> {riskRx.medicine}</p>
+                  <p><b>Status:</b> {riskRx.status}</p>
+                  <div className="flex items-center gap-2 mt-2 p-2 bg-orange-50 border border-orange-200 rounded-lg">
+                    <img src={warningIcon} className="w-4 h-4" alt="warning" />
+                    <p className="text-orange-600 font-medium text-xs">
+                      You are dispensing High-risk medication for {selectedPatient?.name}!
+                    </p>
+                  </div>
+                </div>
+              )}
+              <div className="flex gap-2 pt-2">
+                <button onClick={() => setCabinetOpen(false)} className="w-1/2 border rounded-xl py-2">Close</button>
+                <button
+                  onClick={() => { console.log('OPEN CABINET:', riskRx); setCabinetOpen(false); }}
+                  className="w-1/2 bg-orange-500 text-white rounded-xl py-2 font-semibold"
+                >
+                  Open
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-
-      {/* RIGHT: SIDE EFFECTS */}
-      <div className="col-span-12 lg:col-span-3 space-y-4">
-
-        <Card>
-          <h2 className="font-semibold mb-2">Side Effects</h2>
-
-          <ActivityFeed
-            items={patientSideEffects.map(se => ({
-              id: se.id,
-              title: `${se.medication}: ${se.reaction}`,
-              time: se.reportedAt
-            }))}
-          />
-        </Card>
-
-      </div>
-
     </div>
   )
 }
@@ -324,17 +408,13 @@ export function PatientDashboard({
   onMarkDose,
   onSaveContact
 }) {
-
   const myRx = prescriptionsData.filter(p => p.patientId === patientData.id)
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-
       <div className="col-span-12 lg:col-span-8 space-y-4">
-
         <Card>
           <h2 className="font-semibold mb-2">My Medications</h2>
-
           <div className="overflow-x-auto">
             <Table
               columns={['RX', 'Medicine', 'Status']}
@@ -354,46 +434,40 @@ export function PatientDashboard({
 
         <Card>
           <h2 className="font-semibold mb-2">Dose Tracker</h2>
-
           {myRx.map(r => (
-            <div key={r.id} className="flex justify-between py-2">
+            <div key={r.id} className="flex justify-between py-2 border-b last:border-0 border-slate-100 dark:border-slate-800">
               <span>{r.medicine}</span>
               <button
                 onClick={() => onMarkDose(r.id)}
-                className="rounded-lg border px-3 py-1 text-sm"
+                className="rounded-lg border px-3 py-1 text-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition"
               >
                 {doseTakenSet[r.id] ? 'Taken' : 'Mark Taken'}
               </button>
             </div>
           ))}
         </Card>
-
       </div>
 
       <div className="col-span-12 lg:col-span-4 space-y-4">
-
         <Card>
           <h2 className="font-semibold mb-2">Profile</h2>
-
           <div className="text-sm space-y-1">
-            <p>{patientData.name}</p>
-            <p>{patientData.bloodType}</p>
-            <p>{patientData.risk}</p>
+            <p className="font-medium">{patientData.name}</p>
+            <p className="text-slate-500">Blood Type: {patientData.bloodType}</p>
+            <p className="text-slate-500">Risk Profile: {patientData.risk}</p>
           </div>
         </Card>
 
         <Card>
-          <h2 className="font-semibold mb-2">Contact</h2>
-
+          <h2 className="font-semibold mb-2">Contact Info</h2>
+          <label className="text-xs text-slate-500 block mb-1">Mobile Number</label>
           <input
             value={contactInfo.mobile}
             onChange={(e) => onSaveContact({ ...contactInfo, mobile: e.target.value })}
-            className="w-full border rounded-lg p-2 text-sm"
+            className="w-full border rounded-lg p-2 text-sm bg-transparent border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none"
           />
         </Card>
-
       </div>
-
     </div>
   )
 }

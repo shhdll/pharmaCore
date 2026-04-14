@@ -13,7 +13,7 @@ import { users } from './data/users'
 import logo from './assets/logo.png'
 const MotionDiv = motion.div
 const MotionButton = motion.button
-const roleHome = { Admin: '/admin/overview', Pharmacist: '/pharmacist/queue', Patient: '/patient/overview' }
+const roleHome = { Admin: '/admin/overview', Pharmacist: '/pharmacist/overview', Patient: '/patient/overview' }
 const roleRoutes = {
   Admin: ['/admin/overview', '/admin/inventory', '/admin/analytics'],
   Pharmacist: ['/pharmacist/queue', '/pharmacist/review', '/pharmacist/dispense'],
@@ -27,6 +27,7 @@ const navByRole = {
     { label: 'Analytics', path: '/admin/analytics', icon: Activity },
   ],
   Pharmacist: [
+    { label: 'Overview', path: '/pharmacist/overview', icon: LayoutGrid },
     { label: 'Patient Queue', path: '/pharmacist/queue', icon: UserRoundSearch },
     { label: 'Prescription Review', path: '/pharmacist/review', icon: ClipboardList },
     { label: 'Dispense Center', path: '/pharmacist/dispense', icon: ShieldCheck },
@@ -240,6 +241,28 @@ function App() {
             <Route path="/admin/inventory" element={role === 'Admin' ? <AdminDashboard loading={loading} medicationsData={medicationsData} prescriptionsData={prescriptionsData} mode="inventory" onAddItem={() => {}} onRemoveItem={() => {}} onUpdateItem={() => {}} key="admin-inventory" /> : <Navigate to={roleHome[role]} replace />} />
             <Route path="/admin/analytics" element={role === 'Admin' ? <AdminDashboard loading={loading} medicationsData={medicationsData} prescriptionsData={prescriptionsData} mode="analytics" onAddItem={() => {}} onRemoveItem={() => {}} onUpdateItem={() => {}} key="admin-analytics" /> : <Navigate to={roleHome[role]} replace />} />
 
+<Route
+  path="/pharmacist/overview"
+  element={
+    role === 'Pharmacist'
+      ? <PharmacistDashboard
+          key="pharmacist-overview"
+          mode="overview"
+          patientsData={patients}
+          prescriptionsData={prescriptionsData}
+          medicationsData={medicationsData}
+          reportedSideEffects={reportedSideEffects}
+          selectedNationalId={selectedNationalId}
+          setSelectedNationalId={setSelectedNationalId}
+          selectedRxId={selectedRxId}
+          setSelectedRxId={setSelectedRxId}
+          onDispense={handleDispense}
+          onCriticalDispense={() => setCabinetModalOpen(true)}
+          onSelectAlternative={handleAlternative}
+        />
+      : <Navigate to={roleHome[role]} replace />
+  }
+/>
             <Route path="/pharmacist/queue" element={role === 'Pharmacist' ? <PharmacistDashboard key="pharmacist-queue" mode="queue" patientsData={patients} prescriptionsData={prescriptionsData} medicationsData={medicationsData} reportedSideEffects={reportedSideEffects} selectedNationalId={selectedNationalId} setSelectedNationalId={setSelectedNationalId} selectedRxId={selectedRxId} setSelectedRxId={setSelectedRxId} onDispense={handleDispense} onCriticalDispense={() => setCabinetModalOpen(true)} onSelectAlternative={handleAlternative} /> : <Navigate to={roleHome[role]} replace />} />
             <Route path="/pharmacist/review" element={role === 'Pharmacist' ? <PharmacistDashboard key="pharmacist-review" mode="review" patientsData={patients} prescriptionsData={prescriptionsData} medicationsData={medicationsData} reportedSideEffects={reportedSideEffects} selectedNationalId={selectedNationalId} setSelectedNationalId={setSelectedNationalId} selectedRxId={selectedRxId} setSelectedRxId={setSelectedRxId} onDispense={handleDispense} onCriticalDispense={() => setCabinetModalOpen(true)} onSelectAlternative={handleAlternative} /> : <Navigate to={roleHome[role]} replace />} />
             <Route path="/pharmacist/dispense" element={role === 'Pharmacist' ? <PharmacistDashboard key="pharmacist-dispense" mode="dispense" patientsData={patients} prescriptionsData={prescriptionsData} medicationsData={medicationsData} reportedSideEffects={reportedSideEffects} selectedNationalId={selectedNationalId} setSelectedNationalId={setSelectedNationalId} selectedRxId={selectedRxId} setSelectedRxId={setSelectedRxId} onDispense={handleDispense} onCriticalDispense={() => setCabinetModalOpen(true)} onSelectAlternative={handleAlternative} /> : <Navigate to={roleHome[role]} replace />} />
