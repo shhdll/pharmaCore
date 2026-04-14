@@ -29,7 +29,8 @@ const statusTone = {
 
   active: 'info',
   not_dispensed: 'warning',
-  dispensed: 'success'
+  dispensed: 'success',
+  expired_rx: 'danger'
 }
 
 /* ---------------- ADMIN DASHBOARD ---------------- */
