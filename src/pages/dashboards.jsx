@@ -188,14 +188,16 @@ export function PharmacistDashboard({
   const patientRx =
     prescriptionsData.filter(p => p.patientId === selectedPatient?.id)
 
+  // FIX: correct relational model (patient-based, not medicine matching)
   const patientSideEffects =
     reportedSideEffects.filter(se =>
-      patientRx.some(rx => rx.medicine === se.medication)
+      se.patientId === selectedPatient?.id
     )
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
 
+      {/* LEFT: PATIENT QUEUE */}
       <div className="col-span-12 lg:col-span-3 space-y-4">
         <Card>
           <h2 className="font-semibold mb-2">Patient Queue</h2>
@@ -210,7 +212,11 @@ export function PharmacistDashboard({
                   <button
                     key={p.id}
                     onClick={() => setSelectedNationalId(p.nationalId)}
-                    className="text-left w-full"
+                    className={`w-full text-left px-2 py-1 rounded-lg transition ${
+                      selectedNationalId === p.nationalId
+                        ? 'bg-emerald-500 text-white font-semibold'
+                        : 'hover:bg-gray-100 dark:hover:bg-slate-800'
+                    }`}
                   >
                     {p.name}
                   </button>
@@ -221,6 +227,7 @@ export function PharmacistDashboard({
         </Card>
       </div>
 
+      {/* CENTER: PRESCRIPTIONS */}
       <div className="col-span-12 lg:col-span-6 space-y-4">
 
         <Card>
@@ -234,7 +241,17 @@ export function PharmacistDashboard({
               rows={patientRx.map(r => ({
                 id: r.id,
                 cells: [
-                  r.id,
+                  <button
+                    key={r.id}
+                    onClick={() => setSelectedRxId(r.id)}
+                    className={`text-left w-full ${
+                      selectedRxId === r.id
+                        ? 'font-semibold text-emerald-600'
+                        : ''
+                    }`}
+                  >
+                    {r.id}
+                  </button>,
                   r.medicine,
                   <Badge key={r.id} tone={statusTone[r.status] || 'info'}>
                     {r.status}
@@ -255,20 +272,27 @@ export function PharmacistDashboard({
         <Card>
           <h2 className="font-semibold mb-2">Active Prescription Detail</h2>
 
-          {patientRx[0] ? (
-            <div className="text-sm space-y-1">
-              <p><b>Medicine:</b> {patientRx[0].medicine}</p>
-              <p><b>Instructions:</b> {patientRx[0].instructions}</p>
-              <p><b>Physician:</b> {patientRx[0].physician}</p>
-              <p><b>Refills:</b> {patientRx[0].refills}</p>
-            </div>
-          ) : (
-            <p className="text-sm text-gray-500">No prescriptions</p>
+          {patientRx.find(r => r.id === selectedRxId) ? (() => {
+            const rx = patientRx.find(r => r.id === selectedRxId)
+
+            return (
+              <div className="text-sm space-y-1">
+                <p><b>Medicine:</b> {rx.medicine}</p>
+                <p><b>Instructions:</b> {rx.instructions}</p>
+                <p><b>Physician:</b> {rx.physician}</p>
+                <p><b>Refills:</b> {rx.refills}</p>
+              </div>
+            )
+          })() : (
+            <p className="text-sm text-gray-500">
+              Select a prescription
+            </p>
           )}
         </Card>
 
       </div>
 
+      {/* RIGHT: SIDE EFFECTS */}
       <div className="col-span-12 lg:col-span-3 space-y-4">
 
         <Card>
@@ -277,7 +301,7 @@ export function PharmacistDashboard({
           <ActivityFeed
             items={patientSideEffects.map(se => ({
               id: se.id,
-              title: se.reaction,
+              title: `${se.medication}: ${se.reaction}`,
               time: se.reportedAt
             }))}
           />
