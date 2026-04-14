@@ -5,10 +5,6 @@ import {
   ClipboardCheck,
   Package,
   Syringe,
-  Activity,
-  User,
-  Pill,
-  HeartPulse
 } from 'lucide-react'
 
 import {
@@ -40,8 +36,8 @@ const statusTone = {
 
 export function AdminDashboard({
   loading,
-  medicationsData,
-  prescriptionsData,
+  medicationsData = [],
+  prescriptionsData = [],
   onAddItem,
   onRemoveItem,
   onUpdateItem,
@@ -64,7 +60,8 @@ export function AdminDashboard({
   const dispensed = prescriptionsData.filter(p => p.status === 'dispensed').length
   const pending = prescriptionsData.filter(p => p.status === 'not_dispensed').length
 
-  const dispenseRate = ((dispensed / Math.max(dispensed + pending, 1)) * 100).toFixed(1)
+  const dispenseRate =
+    ((dispensed / Math.max(dispensed + pending, 1)) * 100).toFixed(1)
 
   const chartBars = [
     lowStock * 2,
@@ -89,11 +86,14 @@ export function AdminDashboard({
   }))
 
   return (
-    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-12 gap-4">
+    <motion.div
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="grid grid-cols-1 lg:grid-cols-12 gap-4"
+    >
+      <div className="col-span-12 lg:col-span-9 space-y-4">
 
-      <div className="col-span-9 space-y-4">
-
-        <div className="grid grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <StatCard title="Total Medications" value={String(medicationsData.length)} icon={Package} />
           <StatCard title="Low Stock" value={String(lowStock)} icon={AlertTriangle} />
           <StatCard title="Expiring Soon" value={String(expiringSoon)} icon={Archive} />
@@ -104,18 +104,20 @@ export function AdminDashboard({
         <Card className="space-y-4">
           <h2 className="text-lg font-semibold">Inventory</h2>
 
-          {loading ? (
-            <div className="grid grid-cols-3 gap-3">
-              <SkeletonCard />
-              <SkeletonCard />
-              <SkeletonCard />
-            </div>
-          ) : (
-            <Table
-              columns={['ID', 'Name', 'Company', 'Stock', 'Status', 'Expiry']}
-              rows={rows}
-            />
-          )}
+          <div className="overflow-x-auto">
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <SkeletonCard />
+                <SkeletonCard />
+                <SkeletonCard />
+              </div>
+            ) : (
+              <Table
+                columns={['ID', 'Name', 'Company', 'Stock', 'Status', 'Expiry']}
+                rows={rows}
+              />
+            )}
+          </div>
 
           <div className="grid grid-cols-3 gap-2">
             <button onClick={onAddItem} className="rounded-xl bg-green-600 px-3 py-2 text-white text-sm">
@@ -136,10 +138,9 @@ export function AdminDashboard({
           </h2>
           <ChartPlaceholder bars={chartBars} />
         </Card>
-
       </div>
 
-      <div className="col-span-3 space-y-4">
+      <div className="col-span-12 lg:col-span-3 space-y-4">
 
         <Card>
           <h2 className="mb-3 text-lg font-semibold">System Alerts</h2>
@@ -173,95 +174,82 @@ export function AdminDashboard({
 export function PharmacistDashboard({
   patientsData = [],
   prescriptionsData = [],
-  medicationsData = [],
   reportedSideEffects = [],
   selectedNationalId,
   setSelectedNationalId,
   selectedRxId,
   setSelectedRxId,
-  onDispense,
-  onCriticalDispense,
-  onSelectAlternative
+  onDispense
 }) {
-  const selectedPatient = patientsData.find(p => p.nationalId === selectedNationalId) || patientsData[0]
+  const selectedPatient =
+    patientsData.find(p => p.nationalId === selectedNationalId) ||
+    patientsData[0]
 
-  const patientRx = prescriptionsData.filter(p => p.patientId === selectedPatient.id)
+  const patientRx =
+    prescriptionsData.filter(p => p.patientId === selectedPatient?.id)
 
-  const patientSideEffects = reportedSideEffects.filter(se =>
-    patientRx.some(rx => rx.medicine === se.medication)
-  )
+  const patientSideEffects =
+    reportedSideEffects.filter(se =>
+      patientRx.some(rx => rx.medicine === se.medication)
+    )
 
   return (
-    <div className="grid grid-cols-12 gap-4">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
 
-      {/* LEFT: PATIENT QUEUE */}
-      <div className="col-span-3 space-y-4">
+      <div className="col-span-12 lg:col-span-3 space-y-4">
         <Card>
           <h2 className="font-semibold mb-2">Patient Queue</h2>
 
-          <Table
-            columns={['ID', 'Name']}
-            rows={patientsData.slice(0, 12).map(p => ({
-              id: p.id,
-              cells: [
-                p.id,
-                <button
-                  key={p.id}
-                  onClick={() => setSelectedNationalId(p.nationalId)}
-                  className={`text-left w-full ${selectedNationalId === p.nationalId ? 'font-bold' : ''}`}
-                >
-                  {p.name}
-                </button>
-              ]
-            }))}
-          />
+          <div className="overflow-x-auto">
+            <Table
+              columns={['ID', 'Name']}
+              rows={patientsData.slice(0, 12).map(p => ({
+                id: p.id,
+                cells: [
+                  p.id,
+                  <button
+                    key={p.id}
+                    onClick={() => setSelectedNationalId(p.nationalId)}
+                    className="text-left w-full"
+                  >
+                    {p.name}
+                  </button>
+                ]
+              }))}
+            />
+          </div>
         </Card>
       </div>
 
-      {/* CENTER: PRESCRIPTIONS */}
-      <div className="col-span-6 space-y-4">
+      <div className="col-span-12 lg:col-span-6 space-y-4">
 
         <Card>
           <h2 className="font-semibold mb-2">
-            Prescriptions — {selectedPatient.name}
+            Prescriptions — {selectedPatient?.name}
           </h2>
 
-          <Table
-            columns={['RX', 'Medicine', 'Status']}
-            rows={patientRx.map(r => ({
-              id: r.id,
-              cells: [
-                r.id,
-                r.medicine,
-                <Badge key={r.id} tone={statusTone[r.status] || 'info'}>
-                  {r.status}
-                </Badge>
-              ]
-            }))}
-          />
-
-          <div className="grid grid-cols-3 gap-2 mt-3">
-            <button
-              onClick={() => onDispense(selectedRxId)}
-              className="bg-green-600 text-white rounded-xl py-2"
-            >
-              Dispense
-            </button>
-
-            <button
-              onClick={onCriticalDispense}
-              className="border rounded-xl py-2"
-            >
-              Critical
-            </button>
-
-            <button
-              onClick={onSelectAlternative}
-              className="border rounded-xl py-2"
-            >
-              Alternative
-            </button>
+          <div className="overflow-x-auto">
+            <Table
+              columns={['RX', 'Medicine', 'Status']}
+              rows={patientRx.map(r => ({
+                id: r.id,
+                cells: [
+                  r.id,
+                  r.medicine,
+                  <Badge key={r.id} tone={statusTone[r.status] || 'info'}>
+                    {r.status}
+                  </Badge>
+                ]
+              }))}
+            />
           </div>
+
+          <button
+            onClick={() => onDispense(selectedRxId)}
+            className="mt-3 w-full bg-green-600 text-white rounded-xl py-2"
+          >
+            Dispense
+          </button>
         </Card>
 
         <Card>
@@ -281,8 +269,7 @@ export function PharmacistDashboard({
 
       </div>
 
-      {/* RIGHT: CLINICAL CONTEXT */}
-      <div className="col-span-3 space-y-4">
+      <div className="col-span-12 lg:col-span-3 space-y-4">
 
         <Card>
           <h2 className="font-semibold mb-2">Side Effects</h2>
@@ -290,20 +277,10 @@ export function PharmacistDashboard({
           <ActivityFeed
             items={patientSideEffects.map(se => ({
               id: se.id,
-              title: `${se.reaction}`,
+              title: se.reaction,
               time: se.reportedAt
             }))}
           />
-        </Card>
-
-        <Card>
-          <h2 className="font-semibold mb-2">Risk Context</h2>
-
-          <div className="text-sm space-y-1">
-            <p>Risk: {selectedPatient.risk}</p>
-            <p>Allergies: {selectedPatient.allergies?.join(', ') || 'None'}</p>
-            <p>Condition: {selectedPatient.medicalHistory?.[0]}</p>
-          </div>
         </Card>
 
       </div>
@@ -320,33 +297,34 @@ export function PatientDashboard({
   doseTakenSet = {},
   contactInfo,
   onMarkDose,
-  onReportSideEffect,
   onSaveContact
 }) {
 
   const myRx = prescriptionsData.filter(p => p.patientId === patientData.id)
 
   return (
-    <div className="grid grid-cols-12 gap-4">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
 
-      <div className="col-span-8 space-y-4">
+      <div className="col-span-12 lg:col-span-8 space-y-4">
 
         <Card>
           <h2 className="font-semibold mb-2">My Medications</h2>
 
-          <Table
-            columns={['RX', 'Medicine', 'Status']}
-            rows={myRx.map(r => ({
-              id: r.id,
-              cells: [
-                r.id,
-                r.medicine,
-                <Badge key={r.id} tone={statusTone[r.status] || 'info'}>
-                  {r.status}
-                </Badge>
-              ]
-            }))}
-          />
+          <div className="overflow-x-auto">
+            <Table
+              columns={['RX', 'Medicine', 'Status']}
+              rows={myRx.map(r => ({
+                id: r.id,
+                cells: [
+                  r.id,
+                  r.medicine,
+                  <Badge key={r.id} tone={statusTone[r.status] || 'info'}>
+                    {r.status}
+                  </Badge>
+                ]
+              }))}
+            />
+          </div>
         </Card>
 
         <Card>
@@ -367,7 +345,7 @@ export function PatientDashboard({
 
       </div>
 
-      <div className="col-span-4 space-y-4">
+      <div className="col-span-12 lg:col-span-4 space-y-4">
 
         <Card>
           <h2 className="font-semibold mb-2">Profile</h2>
@@ -390,6 +368,7 @@ export function PatientDashboard({
         </Card>
 
       </div>
+
     </div>
   )
 }
