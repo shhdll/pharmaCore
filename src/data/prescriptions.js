@@ -1,7 +1,7 @@
 import { medications } from './medications'
 import { patients } from './patients'
 
-const statuses = ['Active', 'Dispensed', 'Not Dispensed', 'Expired']
+const statuses = ['active', 'dispensed', 'not_dispensed', 'expired']
 
 const physicians = [
   'Dr. Fahad',
